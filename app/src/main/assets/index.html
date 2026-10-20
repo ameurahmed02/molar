@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>حاسبة الكتلة المولية</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1c2430;--muted:#667085;--accent:#0f766e;--line:#e3e6ea;--err:#b42318;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161b;--card:#1b2128;--text:#eef1f5;--muted:#9aa4b2;--accent:#2dd4bf;--line:#2b333c;--err:#f97066;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161b;--card:#1b2128;--text:#eef1f5;--muted:#9aa4b2;--accent:#2dd4bf;--line:#2b333c;--err:#f97066;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;line-height:1.5}
+main{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.4rem;margin:0 0 4px}
+p.sub{color:var(--muted);margin:0 0 16px;font-size:.9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+input{width:100%;box-sizing:border-box;font-size:1.3rem;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);direction:ltr;text-align:left}
+input:focus{outline:2px solid var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;direction:ltr}
+.chips button{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:999px;padding:6px 12px;font-size:.95rem;cursor:pointer}
+.res{text-align:center}
+.res .n{font-size:2.2rem;font-weight:700;color:var(--accent);direction:ltr}
+.res .u{color:var(--muted)}
+.err{color:var(--err);text-align:center}
+.tw{overflow-x:auto}
+h2{font-size:1.1rem;margin:0 0 12px}
+label{display:block;margin-bottom:12px;color:var(--muted);font-size:.9rem}
+.row{display:flex;gap:8px;margin-top:4px}
+.row input{flex:1;min-width:0;font-size:1.1rem}
+select{font-size:1rem;padding:0 8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+.big{text-align:center;margin:8px 0 12px}
+.big .n{font-size:2rem;font-weight:700;color:var(--accent);direction:ltr}
+ol{margin:8px 0 0;padding-inline-start:20px}
+.note{color:var(--muted);font-size:.85rem;margin-top:8px}
+.warn{border-color:var(--err)}
+ul{margin:0;padding-inline-start:20px}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<h1>حاسبة المخبر: الكتلة المولية وتحضير المحاليل</h1>
+<p class="sub">اكتب الصيغة الكيميائية (مثال: H2SO4 أو Ca(OH)2). الحروف الكبيرة والصغيرة مهمة.</p>
+<div class="card">
+<select id="sub" aria-label="اختر مادة" style="width:100%;margin-bottom:10px;padding:10px"></select>
+<input id="f" value="H2SO4" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text" aria-label="الصيغة الكيميائية">
+<div class="chips" id="chips"></div>
+</div>
+<div class="card" id="out"></div>
+<div id="safe"></div>
+<div class="card">
+<h2>تحضير محلول</h2>
+<label>التركيز المطلوب<div class="row"><input id="c" type="number" step="any" value="0.1" inputmode="decimal"><select id="cu"><option value="M">mol/L</option><option value="g">g/L</option></select></div></label>
+<label>حجم المحلول المطلوب<div class="row"><input id="v" type="number" step="any" value="250" inputmode="decimal"><select id="vu"><option value="mL">mL</option><option value="L">L</option></select></div></label>
+<label>نقاوة المادة %<div class="row"><input id="p" type="number" step="any" value="100" inputmode="decimal"></div></label>
+<div id="pout"></div>
+</div>
+<div class="card">
+<h2>تخفيف محلول</h2>
+<label>تركيز المحلول الأم<div class="row"><input id="c1" type="number" step="any" value="1" inputmode="decimal"><select id="du"><option value="mol/L">mol/L</option><option value="g/L">g/L</option><option value="%">%</option></select></div></label>
+<label>التركيز المطلوب (بنفس الوحدة)<div class="row"><input id="c2" type="number" step="any" value="0.1" inputmode="decimal"></div></label>
+<label>الحجم المطلوب<div class="row"><input id="v2" type="number" step="any" value="100" inputmode="decimal"><select id="dvu"><option value="mL">mL</option><option value="L">L</option></select></div></label>
+<div id="dout"></div>
+</div>
+<div class="card">
+<h2>حساب التركيز الفعلي</h2>
+<label>الكتلة الموزونة (g)<div class="row"><input id="rm" type="number" step="any" value="2.5" inputmode="decimal"></div></label>
+<label>الحجم النهائي للمحلول<div class="row"><input id="rv" type="number" step="any" value="250" inputmode="decimal"><select id="rvu"><option value="mL">mL</option><option value="L">L</option></select></div></label>
+<label>نقاوة المادة %<div class="row"><input id="rp" type="number" step="any" value="100" inputmode="decimal"></div></label>
+<div id="rout"></div>
+</div>
+</main>
+<script>
+const M={H:1.008,He:4.0026,Li:6.94,Be:9.0122,B:10.81,C:12.011,N:14.007,O:15.999,F:18.998,Ne:20.18,Na:22.99,Mg:24.305,Al:26.982,Si:28.085,P:30.974,S:32.06,Cl:35.45,Ar:39.948,K:39.098,Ca:40.078,Sc:44.956,Ti:47.867,V:50.942,Cr:51.996,Mn:54.938,Fe:55.845,Co:58.933,Ni:58.693,Cu:63.546,Zn:65.38,Ga:69.723,Ge:72.63,As:74.922,Se:78.971,Br:79.904,Kr:83.798,Rb:85.468,Sr:87.62,Y:88.906,Zr:91.224,Nb:92.906,Mo:95.95,Ru:101.07,Rh:102.91,Pd:106.42,Ag:107.87,Cd:112.41,In:114.82,Sn:118.71,Sb:121.76,Te:127.6,I:126.9,Xe:131.29,Cs:132.91,Ba:137.33,La:138.91,Ce:140.12,W:183.84,Pt:195.08,Au:196.97,Hg:200.59,Pb:207.2,Bi:208.98,Ra:226,Rn:222,Th:232.04,U:238.03};
+function group(s){
+  const st=[{}];let i=0;
+  const num=()=>{let j=i;while(i<s.length&&/\d/.test(s[i]))i++;return i>j?parseInt(s.slice(j,i),10):1};
+  while(i<s.length){
+    const c=s[i];
+    if(c==='('||c==='['){st.push({});i++}
+    else if(c===')'||c===']'){
+      if(st.length<2)throw new Error('قوس إغلاق زائد');
+      i++;const n=num(),t=st.pop(),p=st[st.length-1];
+      for(const k in t)p[k]=(p[k]||0)+t[k]*n;
+    }else if(/[A-Z]/.test(c)){
+      let sym=c;i++;
+      while(i<s.length&&/[a-z]/.test(s[i])){sym+=s[i];i++}
+      if(!(sym in M))throw new Error('عنصر غير معروف: '+sym);
+      const n=num(),t=st[st.length-1];t[sym]=(t[sym]||0)+n;
+    }else throw new Error('رمز غير صالح: '+c);
+  }
+  if(st.length!==1)throw new Error('قوس غير مغلق');
+  return st[0];
+}
+function parse(raw){
+  let s=raw.replace(/[₀-₉]/g,d=>d.charCodeAt(0)-8320).replace(/\s+/g,'');
+  if(!s)throw new Error('');
+  const total={};
+  for(const part of s.split(/[·.*•]/)){
+    if(!part)continue;
+    const m=part.match(/^(\d+)(.*)$/);
+    const k=m?parseInt(m[1],10):1,body=m?m[2]:part;
+    if(!body)throw new Error('صيغة ناقصة');
+    const g=group(body);
+    for(const e in g)total[e]=(total[e]||0)+g[e]*k;
+  }
+  return total;
+}
+let MM=null;
+function calc(){
+  const out=document.getElementById('out');
+  try{
+    const t=parse(document.getElementById('f').value);
+    const rows=Object.keys(t).map(e=>({e,n:t[e],m:M[e],sub:M[e]*t[e]}));
+    const tot=rows.reduce((a,r)=>a+r.sub,0);MM=tot;prep();safety();rev();
+    out.innerHTML='<div class="res"><div class="n">'+tot.toFixed(3)+'</div><div class="u">غ/مول (g/mol)</div></div>'+
+    '<div class="tw"><table><tr><th>العنصر</th><th>العدد</th><th>الكتلة الذرية</th><th>المجموع</th><th>%</th></tr>'+
+    rows.map(r=>'<tr><td>'+r.e+'</td><td>'+r.n+'</td><td>'+r.m+'</td><td>'+r.sub.toFixed(3)+'</td><td>'+(r.sub/tot*100).toFixed(2)+'</td></tr>').join('')+'</table></div>';
+  }catch(x){MM=null;prep();safety();rev();out.innerHTML='<div class="err">'+(x.message||'اكتب صيغة كيميائية')+'</div>'}
+}
+function dil(){
+  const o=document.getElementById('dout');
+  const c1=parseFloat(document.getElementById('c1').value),c2=parseFloat(document.getElementById('c2').value),v2=parseFloat(document.getElementById('v2').value);
+  const u=document.getElementById('du').value,vu=document.getElementById('dvu').value;
+  if(!(c1>0)||!(c2>0)||!(v2>0)){o.innerHTML='<div class="err">أدخل التركيزين والحجم</div>';return}
+  if(c2>=c1){o.innerHTML='<div class="err">التركيز المطلوب يجب أن يكون أصغر من تركيز المحلول الأم</div>';return}
+  const V2=vu==='L'?v2*1000:v2;
+  const v1=c2*V2/c1,w=V2-v1,f=c1/c2;
+  const fm=x=>+x.toPrecision(5);
+  o.innerHTML='<div class="big"><div class="n">'+fm(v1)+' mL</div><div style="color:var(--muted)">حجم المحلول الأم الذي يُؤخذ</div></div>'+
+  '<div class="tw"><table><tr><th>عامل التخفيف</th><th>حجم الماء المقطر (تقريباً)</th><th>الحجم النهائي</th></tr><tr><td>'+fm(f)+'</td><td>'+fm(w)+' mL</td><td>'+fm(V2)+' mL</td></tr></table></div>'+
+  '<ol><li>خذ '+fm(v1)+' mL من المحلول الأم (C1 = '+c1+' '+u+') بماصة أو مخبار مدرّج.</li><li>ضعها في حوجلة عيارية سعتها '+fm(V2)+' mL.</li><li>أكمل بالماء المقطر حتى خط العيار ثم رجّ جيداً.</li></ol>'+
+  '<div class="note">القانون: C1·V1 = C2·V2. حجم الماء تقريبي، والمعتمد هو الإكمال حتى خط العيار.</div>';
+}
+['c1','c2','v2','du','dvu'].forEach(id=>document.getElementById(id).addEventListener('input',dil));
+dil();
+const HZ={
+'H2SO4':['أضف الحمض ببطء إلى الماء وليس العكس، فالتفاعل شديد الحرارة.','حمض أكّال: تجنّب ملامسة الجلد والعينين.'],
+'HCl':['أضف الحمض إلى الماء وليس العكس.','أبخرته مهيّجة: اعمل في مكان جيد التهوية.'],
+'HNO3':['أضف الحمض إلى الماء وليس العكس.','حمض مؤكسد وأبخرته سامة: اعمل بتهوية جيدة أو تحت شفاط.'],
+'NaOH':['الإذابة طاردة للحرارة وتسخّن الحوجلة: أذب في قليل من الماء وبرّد قبل الإكمال حتى خط العيار.','مادة أكّالة وماصّة للرطوبة: زنها بسرعة وأغلق العبوة جيداً.'],
+'CH3COOH':['أبخرته مهيّجة: اعمل في مكان جيد التهوية.','أضف الحمض إلى الماء وليس العكس.'],
+'NH3':['رائحته نفّاذة ومهيّجة: اعمل بتهوية جيدة وأغلق العبوة بعد الاستعمال.'],
+'KMnO4':['مؤكسد قوي: أبعده عن المواد العضوية والمختزلة.','يترك بقعاً على الجلد والملابس.'],
+'AgNO3':['يترك بقعاً سوداء على الجلد ويضر بالعينين.','لا يُرمى في المجاري: يُجمع في وعاء النفايات الكيميائية.']
+};
+HZ.KOH=HZ.NaOH;
+function safety(){
+  const s=document.getElementById('safe');
+  const k=document.getElementById('f').value.replace(/\s+/g,'');
+  const t=MM&&HZ[k];
+  s.innerHTML=t?'<div class="card warn"><h2>⚠️ تنبيه السلامة</h2><ul>'+t.map(x=>'<li>'+x+'</li>').join('')+'</ul><div class="note">ارتدِ المئزر والنظارات الواقية والقفازات.</div></div>':'';
+}
+function rev(){
+  const o=document.getElementById('rout');
+  const m=parseFloat(document.getElementById('rm').value),V=parseFloat(document.getElementById('rv').value),P=parseFloat(document.getElementById('rp').value);
+  const vu=document.getElementById('rvu').value;
+  if(!MM){o.innerHTML='<div class="err">أدخل صيغة كيميائية صحيحة أعلاه</div>';return}
+  if(!(m>0)||!(V>0)||!(P>0&&P<=100)){o.innerHTML='<div class="err">أدخل الكتلة والحجم والنقاوة (من 1 إلى 100)</div>';return}
+  const L=vu==='mL'?V/1000:V;
+  const n=m*(P/100)/MM,C=n/L,g=m*(P/100)/L;
+  o.innerHTML='<div class="big"><div class="n">'+C.toPrecision(4)+' mol/L</div><div style="color:var(--muted)">التركيز المولي الفعلي</div></div>'+
+  '<div class="tw"><table><tr><th>التركيز الكتلي</th><th>كمية المادة</th></tr><tr><td>'+g.toPrecision(4)+' g/L</td><td>'+n.toPrecision(4)+' mol</td></tr></table></div>';
+}
+['rm','rv','rp','rvu'].forEach(id=>document.getElementById(id).addEventListener('input',rev));
+const PS=[['اختر مادة من القائمة',''],['كلورور الصوديوم','NaCl'],['هيدروكسيد الصوديوم','NaOH'],['هيدروكسيد البوتاسيوم','KOH'],['حمض كلور الماء','HCl'],['حمض الكبريت','H2SO4'],['حمض الأزوت','HNO3'],['حمض الخل (الإيثانويك)','CH3COOH'],['النشادر','NH3'],['برمنغنات البوتاسيوم','KMnO4'],['كبريتات النحاس المميهة','CuSO4·5H2O'],['نترات الفضة','AgNO3'],['كربونات الصوديوم','Na2CO3'],['كلورور الكالسيوم','CaCl2'],['هيدروكسيد الكالسيوم','Ca(OH)2'],['الغلوكوز','C6H12O6']];
+const sb=document.getElementById('sub');
+PS.forEach(p=>{const o=document.createElement('option');o.value=p[1];o.textContent=p[1]?p[0]+' — '+p[1]:p[0];sb.appendChild(o)});
+sb.onchange=()=>{if(sb.value){document.getElementById('f').value=sb.value;calc()}};
+function prep(){
+  const o=document.getElementById('pout');
+  const C=parseFloat(document.getElementById('c').value),V=parseFloat(document.getElementById('v').value),P=parseFloat(document.getElementById('p').value);
+  const cu=document.getElementById('cu').value,vu=document.getElementById('vu').value;
+  if(!MM){o.innerHTML='<div class="err">أدخل صيغة كيميائية صحيحة أعلاه</div>';return}
+  if(!(C>0)||!(V>0)||!(P>0&&P<=100)){o.innerHTML='<div class="err">أدخل التركيز والحجم والنقاوة (من 1 إلى 100)</div>';return}
+  const L=vu==='mL'?V/1000:V;
+  const gL=cu==='M'?C*MM:C;
+  const mol=gL/MM*L;
+  const m=gL*L/(P/100);
+  const ms=m<1?m.toFixed(4):m.toFixed(3);
+  const vml=+(L*1000).toPrecision(6);
+  o.innerHTML='<div class="big"><div class="n">'+ms+' g</div><div class="u" style="color:var(--muted)">الكتلة التي تُوزن</div></div>'+
+  '<div class="tw"><table><tr><th>كمية المادة</th><th>حجم المحلول النهائي</th><th>التركيز</th></tr><tr><td>'+mol.toPrecision(4)+' mol</td><td>'+vml+' mL</td><td>'+(gL/MM).toPrecision(4)+' mol/L<br>'+gL.toPrecision(4)+' g/L</td></tr></table></div>'+
+  '<ol><li>زِن '+ms+' g من المادة.</li><li>ضعها في حوجلة عيارية سعتها '+vml+' mL وأضف قليلاً من الماء المقطر وحرّك حتى الذوبان.</li><li>أكمل بالماء المقطر حتى خط العيار ثم رجّ جيداً.</li></ol>'+
+  '<div class="note">حجم الماء المقطر ليس مجموعاً ثابتاً مع حجم المادة: يُكمَل إلى خط العيار ليبلغ حجم المحلول '+vml+' mL.</div>';
+}
+['c','v','p','cu','vu'].forEach(id=>document.getElementById(id).addEventListener('input',prep));
+const ex=['H2O','NaCl','H2SO4','Ca(OH)2','Al2(SO4)3','CuSO4·5H2O'];
+const ch=document.getElementById('chips');
+ex.forEach(x=>{const b=document.createElement('button');b.textContent=x;b.onclick=()=>{document.getElementById('f').value=x;calc()};ch.appendChild(b)});
+document.getElementById('f').addEventListener('input',calc);
+calc();
+</script>
+</body>
+</html>
